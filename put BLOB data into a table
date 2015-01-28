@@ -1,0 +1,43 @@
+        String url = "jdbc:derby:blobby;create=true";
+        Connection conn = DriverManager.getConnection(url);
+
+        Statement s = conn.createStatement();
+        s.executeUpdate(
+            "CREATE TABLE images (id INT, img BLOB)");
+
+        // - first, create an input stream
+        InputStream fin = new FileInputStream("image.jpg");
+
+        PreparedStatement ps = conn.prepareStatement(
+            "INSERT INTO images VALUES (?, ?)");
+        ps.setInt(1, 1477);
+
+        // - set the value of the input parameter to the input stream
+        ps.setBinaryStream(2, fin);
+        ps.execute();
+
+        // --- reading the columns
+        ResultSet rs = s.executeQuery(
+            "SELECT img FROM images WHERE id = 1477");
+        byte buff[] = new byte[1024];
+
+        while (rs.next()) {
+            Blob ablob = rs.getBlob(1);
+            File newfile = new File("newimage.jpg");
+
+            InputStream is = ablob.getBinaryStream();
+
+            FileOutputStream fos = 
+                new FileOutputStream(newfile);
+
+            for (int b = is.read(buff); b != -1; b = is.read(buff)) {
+                fos.write(buff, 0, b);
+            }
+
+            is.close();
+            fos.close();
+        }
+        s.close();
+        ps.close();
+        rs.close();
+        conn.close();
